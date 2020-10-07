@@ -1,24 +1,18 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { useDrag } from "./hooks/useDrag";
+import { Square } from "./shapes/Square";
 
 function App() {
+  const drag1 = useDrag({ x: 50, y: 300 });
+  const drag2 = useDrag({ x: 300, y: 50 });
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Square size={100} drag={drag1}>
+        S
+      </Square>
+      <Square size={100} drag={drag2}>
+        T
+      </Square>
     </div>
   );
 }
