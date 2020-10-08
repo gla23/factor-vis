@@ -1,36 +1,51 @@
-import {
-  useEffect,
-  useState,
-  useRef,
-  MouseEvent as ReactMouseEvent,
-} from "react";
+import { useState, useRef, MouseEvent as ReactMouseEvent } from "react";
+import { useMousePos, useMouseUp } from "./useMousePos";
 
-interface Position {
-  x: number;
-  y: number;
+export class Position {
+  constructor(public x: number, public y: number, public z: number = 0) {}
+  scale(operand: number) {
+    return new Position(this.x * operand, this.y * operand, this.z * operand);
+  }
+  add(operand: Position) {
+    return new Position(
+      this.x + operand.x,
+      this.y + operand.y,
+      this.z + operand.z
+    );
+  }
+  minus(operand: Position) {
+    return new Position(
+      this.x - operand.x,
+      this.y - operand.y,
+      this.z - operand.z
+    );
+  }
+  dot(operand: Position) {
+    return this.x * operand.x + this.y * operand.y + this.z * operand.z;
+  }
+  multiply(matrix: Matrix) {
+    return new Position(
+      this.dot(matrix[0]),
+      this.dot(matrix[1]),
+      this.dot(matrix[2])
+    );
+  }
+  map(fn: (value: number) => number) {
+    return new Position(fn(this.x), fn(this.y), fn(this.z));
+  }
 }
-const origin: Position = { x: 0, y: 0 };
-const add = (a: Position, b: Position) => ({ x: a.x + b.x, y: a.y + b.y });
-const minus = (a: Position, b: Position) => ({ x: a.x - b.x, y: a.y - b.y });
+
+type Matrix = readonly [Position, Position, Position];
+
+const origin = new Position(0, 0, 0);
 
 export interface Drag {
-  position: Position;
-  onClick?: (e: ReactMouseEvent<HTMLElement>) => void;
-  onMouseDown?: (e: ReactMouseEvent<HTMLElement>) => void;
-  onMouseUp?: (e: ReactMouseEvent<HTMLElement>) => void;
+  x: number;
+  y: number;
+  onClick?: (e: ReactMouseEvent) => void;
+  onMouseDown?: (e: ReactMouseEvent) => void;
+  onMouseUp?: (e: ReactMouseEvent) => void;
 }
-const useMousePos = (
-  update: (position: Position) => any,
-  listen: boolean = true
-) => {
-  useEffect(() => {
-    if (!listen) return;
-    const fn = (event: MouseEvent) =>
-      update({ x: event.clientX, y: event.clientY });
-    window.addEventListener("mousemove", fn);
-    return () => window.removeEventListener("mousemove", fn);
-  }, [update, listen]);
-};
 
 export const useToggleDrag = (initial: Position): Drag => {
   const [position, setPosition] = useState(initial);
@@ -38,14 +53,17 @@ export const useToggleDrag = (initial: Position): Drag => {
   const offsetRef = useRef(origin);
   const mouseRef = useRef(origin);
   useMousePos((position) => {
-    mouseRef.current = position;
-    if (dragging) setPosition(add(position, offsetRef.current));
+    const pos = new Position(position.x, position.y);
+    mouseRef.current = pos;
+    if (dragging) setPosition(pos.add(offsetRef.current));
   });
 
   return {
-    position,
-    onClick: () => {
-      offsetRef.current = minus(position, mouseRef.current);
+    x: position.x,
+    y: position.y,
+    onClick: (event: ReactMouseEvent) => {
+      event.stopPropagation();
+      offsetRef.current = position.minus(mouseRef.current);
       setDragging((d) => !d);
     },
   };
@@ -55,17 +73,18 @@ export const useDrag = (initial: Position): Drag => {
   const [dragging, setDragging] = useState(false);
   const offsetRef = useRef(origin);
   const mouseRef = useRef(origin);
+  useMouseUp((event) => setDragging(false));
   useMousePos((position) => {
     mouseRef.current = position;
-    if (dragging) setPosition(add(position, offsetRef.current));
+    if (dragging) setPosition(position.add(offsetRef.current));
   });
 
   return {
-    position,
-    onMouseDown: () => {
-      offsetRef.current = minus(position, mouseRef.current);
+    ...position,
+    onMouseDown: (event: ReactMouseEvent) => {
+      event.stopPropagation();
+      offsetRef.current = position.minus(mouseRef.current);
       setDragging(true);
     },
-    onMouseUp: () => setDragging(false),
   } as const;
 };

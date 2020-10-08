@@ -6,11 +6,11 @@ interface SquareProps {
   size: number;
   drag: Drag;
 }
-export const Square = (props: SquareProps) => {
+export const Circle = (props: SquareProps) => {
   const { size, drag } = props;
   return (
     <div
-      className="shape square"
+      className="shape circle"
       onClick={drag.onClick}
       onMouseDown={drag.onMouseDown}
       onMouseUp={drag.onMouseUp}
